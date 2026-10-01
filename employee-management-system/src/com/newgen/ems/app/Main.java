@@ -3,6 +3,8 @@ package com.newgen.ems.app;
 import com.newgen.ems.model.*;
 import com.newgen.ems.repository.EmployeeRepository;
 
+import java.util.Scanner;
+
 public class Main {
     public static void main(String[] args) {
 
@@ -57,11 +59,103 @@ public class Main {
         }
         System.out.printf("%n%s year-to-date earnings after 12 months: %.2f%n", manager.getName(), yearToDate);
 
-        // Section 15 teaser: Object's default toString() isn't useful yet --
-        // we'll override it when we cover java.lang.Object.
-        System.out.println();
-        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+        runConsoleMenu(employeeRepository);
 
+
+
+//        // Section 15 teaser: Object's default toString() isn't useful yet --
+//        // we'll override it when we cover java.lang.Object.
+//        System.out.println();
+//        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+
+    }
+
+    private static void runConsoleMenu(EmployeeRepository employeeRepository) {
+
+
+        try (Scanner sc = new Scanner(System.in)) {
+            boolean running = true;
+
+             while (running) {
+                 System.out.println();
+                 System.out.println("1. Add new Employee");
+                 System.out.println("2. find Employee by id");
+                 System.out.println("3. list All employees");
+                 System.out.println("4. exit");
+                 System.out.print("Choose an option: ");
+
+                 int choice = sc.nextInt();
+                 sc.nextLine();
+
+                 switch (choice) {
+                     case 1 -> addEmployeeFromConsole(sc, employeeRepository);
+                     case 2 -> {
+                         System.out.println("Enter employee id: ");
+                         int id = Integer.parseInt(sc.nextLine().trim());
+                         printPayslip(employeeRepository.findById(id));
+                     }
+                     case 3 -> {
+                         for (Employee employee : employeeRepository.findAll()) {
+                             printPayslip(employee);
+                         }
+
+                     }
+                     case 4 -> {
+                         running = false;
+                     }
+                     default -> {
+                         System.out.println("Invalid option Choose betwen 1 to 4");
+                     }
+                 }
+             }
+
+        }
+
+    }
+
+    private static void addEmployeeFromConsole(Scanner sc, EmployeeRepository employeeRepository) {
+
+        System.out.print("Employee id: ");
+        int id = Integer.parseInt(sc.nextLine().trim());
+
+        System.out.print("Name: ");
+        String name = sc.nextLine().trim();
+
+        System.out.print("Department: ");
+        String department = sc.nextLine().trim();
+
+        System.out.print("Base salary: ");
+        double baseSalary = Double.parseDouble(sc.nextLine().trim());
+
+        System.out.println("1. Manager  2. Developer  3. Intern");
+        System.out.print("Employee type: ");
+        int type = Integer.parseInt(sc.nextLine().trim());
+
+        Employee newEmployee = switch (type) {
+
+            case 1 -> {
+                System.out.print("Team size: ");
+                int teamSize = Integer.parseInt(sc.nextLine().trim());
+                yield new Manager(id, name, department, baseSalary, teamSize);
+            }
+
+            case 2 -> {
+                System.out.print("Primary language: ");
+                String language = sc.nextLine().trim();
+                yield new Developer(id, name, department, baseSalary, language);
+            }
+
+            default ->  {
+                System.out.print("Mentor name: ");
+                String mentorName = sc.nextLine().trim();
+                yield new Intern(id, name, department, baseSalary, mentorName);
+            }
+
+        };
+
+        employeeRepository.add(newEmployee);
+        System.out.println("Employee " + id + " has been added.");
+        printPayslip(newEmployee);
     }
 
     private static void printPayslip(Employee employee) {
