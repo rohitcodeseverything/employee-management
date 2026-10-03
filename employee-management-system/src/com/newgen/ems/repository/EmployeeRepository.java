@@ -15,6 +15,13 @@ public class EmployeeRepository {
     }
 
     public void add(Employee employee) {
+
+
+
+        if ((size() > 0) && search(employee.getId()) != null)  {
+            throw new DuplicateEmployeeIdException("Employee id " + employee.getId() + " already exists");
+        }
+
         if(count == employees.length) {
             int newCapacity = employees.length * 2;
             System.out.printf("Repository full (capacity %d) -- growing to %d.%n", employees.length, newCapacity);
@@ -24,11 +31,23 @@ public class EmployeeRepository {
         count++;
     }
 
-    public Employee findById(int id) {
+    public Employee findById(int id) throws EmployeeNotFoundException {
 
-        for ( int i=0; i<count; i++ ) {
-            if(employees[i].getId() == id) {
-                return employees[i];
+        Employee employee = search(id);
+        if (employee == null) {
+            throw new EmployeeNotFoundException("No employee found with id" + id);
+        }
+        return employee;
+
+    }
+
+    private Employee search(int id) {
+
+        for (Employee employee : employees) {
+            if(employee != null) {
+                if (employee.getId() == id) {
+                    return employee;
+                }
             }
         }
         return null;

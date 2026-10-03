@@ -1,6 +1,7 @@
 package com.newgen.ems.app;
 
 import com.newgen.ems.model.*;
+import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
 
 import java.util.Scanner;
@@ -28,11 +29,12 @@ public class Main {
 
         // Linear search by id.
         int searchId = 103;
-        Employee found = employeeRepository.findById(searchId);
-        if (found != null) {
+
+        try {
+            Employee found = employeeRepository.findById(searchId);
             System.out.println("Found employee " + searchId + ": " + found.designation());
-        } else {
-            System.out.println("No employee with id " + searchId);
+        } catch (EmployeeNotFoundException e) {
+            System.out.println(e.getMessage());
         }
 
         char performanceGrade = 'A';
@@ -91,8 +93,12 @@ public class Main {
                      case 1 -> addEmployeeFromConsole(sc, employeeRepository);
                      case 2 -> {
                          System.out.println("Enter employee id: ");
-                         int id = Integer.parseInt(sc.nextLine().trim());
-                         printPayslip(employeeRepository.findById(id));
+                         try {
+                             int id = Integer.parseInt(sc.nextLine().trim());
+                             printPayslip(employeeRepository.findById(id));
+                         } catch (EmployeeNotFoundException e) {
+                             System.out.println(e.getMessage());
+                         }
                      }
                      case 3 -> {
                          for (Employee employee : employeeRepository.findAll()) {
