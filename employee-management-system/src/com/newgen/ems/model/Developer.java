@@ -33,4 +33,9 @@ public class Developer extends Employee implements Promotable {
     public String nextRole() {
         return "Senior Developer";
     }
+
+    @Override
+    protected String extraFields() {
+        return "primaryLanguage='" + primaryLanguage + "'";
+    }
 }

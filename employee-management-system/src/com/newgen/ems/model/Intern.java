@@ -15,4 +15,9 @@ public class Intern extends Employee {
     public String designation() {
         return "Intern";
     }
+
+    @Override
+    protected String extraFields() {
+        return "mentorName='" + metorName + "'";
+    }
 }

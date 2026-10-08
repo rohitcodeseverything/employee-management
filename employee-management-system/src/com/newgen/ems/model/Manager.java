@@ -29,5 +29,10 @@ public class Manager extends Employee implements Promotable{
         return "Senior Manager";
     }
 
+    @Override
+    protected String extraFields() {
+        return "teamSize=" + teamSize;
+    }
+
 
 }
