@@ -4,9 +4,7 @@ import com.newgen.ems.model.*;
 import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
 
-import java.util.List;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -51,7 +49,7 @@ public class Main {
             System.out.println(developer.getName() + " is eligible for the annual stock grant.");
         }
 
-        Promotable[] promotables = {manager, developer, secondDeveloper};
+        List<Promotable> promotables = List.of(manager, developer, secondDeveloper);
 
         for (Promotable promotable : promotables) {
             promotable.promote();
@@ -65,7 +63,7 @@ public class Main {
 
         demonstrateObjectMethods(manager, developer, employeeRepository);
         demonstrateWrapperClasses(employeeRepository);
-
+        demonstrateLists(employeeRepository);
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -77,6 +75,50 @@ public class Main {
 //        // we'll override it when we cover java.lang.Object.
 //        System.out.println();
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+
+    }
+
+    private static void demonstrateLists(EmployeeRepository employeeRepository) {
+        System.out.println();
+        System.out.println("=== Section 17: lists ===");
+
+        List<Employee> everyone =  employeeRepository.findAll();
+
+         try {
+             everyone.add(new Intern(999, "Komal", "Engineering", 1, "Nobody"));
+         } catch (UnsupportedOperationException ex) {
+             System.out.printf("%-34s: %s%n", "findAll().add(...)", ex.getClass().getSimpleName());
+         }
+
+         List<String> newestFirst = new ArrayList<>();
+         ListIterator<Employee> backward =  everyone.listIterator(everyone.size());
+
+         while (backward.hasPrevious()) {
+             System.out.println("Previous ::: " + backward.previous());
+             newestFirst.add(backward.previous().getName());
+         }
+
+        System.out.printf("%-34s: %s%n", "Newest first (ListIterator)", String.join(", ", newestFirst));
+
+
+         var ids = new ArrayList<>(employeeRepository.findAllIds());
+        ids.remove(1);
+        ids.remove(Integer.valueOf(104));
+        System.out.printf("%-34s: %s%n", "ids after remove(1), remove(104)", ids);
+
+        var copy = new ArrayList<>(everyone);
+
+        try {
+
+            for(Employee employee : copy) {
+                if(employee.getId() == 101) {
+                    copy.remove(employee);
+                }
+            }
+
+        } catch (ConcurrentModificationException ex) {
+            System.out.printf("%-34s: %s%n", "remove inside for-each", ex.getClass().getSimpleName());
+        }
 
     }
 
@@ -195,10 +237,16 @@ public class Main {
                  System.out.println("1. Add new Employee");
                  System.out.println("2. find Employee by id");
                  System.out.println("3. list All employees");
-                 System.out.println("4. exit");
+                 System.out.println("4. List employees in a department");
+                 System.out.println("5. List employees sorted");
+                 System.out.println("6. Remove an employee by id");
+                 System.out.println("7. Remove a whole department");
+                 System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
-                 int choice = sc.nextInt();
+
+                 int choice = readChoice(sc);
+
                  sc.nextLine();
 
                  switch (choice) {
@@ -218,17 +266,81 @@ public class Main {
                          }
 
                      }
-                     case 4 -> {
-                         running = false;
-                     }
+                     case 4 -> listDepartment(sc, employeeRepository);
+                     case 5 -> listSorted(sc, employeeRepository);
+                     case 6 -> removeEmployee(sc, employeeRepository);
+                     case 7 -> removeDepartment(sc, employeeRepository);
+                     case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 1 to 4");
+                         System.out.println("Invalid option Choose betwen 0 to 7");
                      }
                  }
+                 System.out.println("Goodbye!");
              }
 
         }
 
+    }
+
+    private static void removeDepartment(Scanner scanner, EmployeeRepository repository) {
+        System.out.print("Department to remove: ");
+        String department = scanner.nextLine().trim();
+        int removed = repository.removeDepartment(department);
+        System.out.println("Removed " + removed + " employee(s) from " + department);
+    }
+
+    private static void removeEmployee(Scanner scanner, EmployeeRepository repository) {
+        System.out.print("Enter Employeeee id to remove: ");
+        try {
+            int id = readChoice(scanner);
+            Employee removed = repository.remove(id);
+            System.out.println("Removed " + removed.getName() + " (" + removed.designation() + ")");
+        } catch (NumberFormatException | EmployeeNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
+    private static void listDepartment(Scanner sc, EmployeeRepository employeeRepository) {
+        System.out.print("Department: ");
+        String department = sc.nextLine().trim();
+        List<Employee> matches = employeeRepository.findByDepartment(department);
+        if(matches.isEmpty()) {
+            System.out.println("No employees found in Department " + department);
+        }
+
+        for(Employee employee : matches) {
+            System.out.println(Payslip.of(employee));
+        }
+    }
+
+
+    private static void listSorted(Scanner scanner, EmployeeRepository repository) {
+        System.out.println("1. By id  2. By name  3. By monthly pay (highest first)");
+        System.out.print("Sort by: ");
+        Comparator<Employee> order = switch (readChoice(scanner)) {
+            case 1 -> Comparator.naturalOrder();
+            case 2 -> new EmployeeNameComparator();
+            case 3 -> new EmployeeSalaryComparator();
+            default -> null;
+        };
+        if (order == null) {
+            System.out.println("Please choose 1-3.");
+            return;
+        }
+        for (Employee employee : repository.findAllSorted(order)) {
+            System.out.println(Payslip.of(employee));
+        }
+
+    }
+
+
+
+    private static int readChoice(Scanner sc) {
+        try {
+            return Integer.parseInt(sc.nextLine().trim());
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
     }
 
     private static void addEmployeeFromConsole(Scanner sc, EmployeeRepository employeeRepository) {

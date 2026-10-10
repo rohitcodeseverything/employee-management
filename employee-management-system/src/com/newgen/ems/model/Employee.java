@@ -3,7 +3,7 @@ package com.newgen.ems.model;
 import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class Employee implements Payable , Cloneable {
+public abstract class Employee implements Payable , Cloneable, Comparable<Employee> {
 
     private final int id;
     private String name;
@@ -79,6 +79,12 @@ public abstract class Employee implements Payable , Cloneable {
                 (extras.isEmpty() ? "" : ", " + extras) +
                 '}';
     }
+
+    @Override
+    public int compareTo(Employee other) {
+        return Integer.compare(id, other.id);
+    }
+
 
 
     // Subclasses return their own "name=value" pairs, so toString() stays
