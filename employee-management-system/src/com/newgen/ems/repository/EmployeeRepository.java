@@ -6,7 +6,9 @@ import java.util.*;
 
 public class EmployeeRepository {
 
+    private static final int HISTORY_LIMIT = 10;
     private final List<Employee> employees = new ArrayList<>();
+    private final ActivityLog activity = new ActivityLog(HISTORY_LIMIT);
 
     public void add(Employee employee) {
 
@@ -15,6 +17,7 @@ public class EmployeeRepository {
         }
 
         employees.add(employee);
+        activity.record("Added  " + describe(employee));
     }
 
     public Employee findById(int id) throws EmployeeNotFoundException {
@@ -77,6 +80,7 @@ public class EmployeeRepository {
         // remove(Object) locates the element with equals() -- Section 15's
         // same-class-and-same-id rule is what makes this find the right one.
         employees.remove(employee);
+        activity.record("Removed  " + describe(employee));
         return employee;
     }
 
@@ -89,6 +93,17 @@ public class EmployeeRepository {
                 removed++;
             }
         }
+        if(removed > 0) {
+            activity.record("Removed " + removed + " employee(s) from " + department);
+        }
         return removed;
+    }
+
+    public List<String> history() {
+        return activity.latestFirst();
+    }
+
+    private static String describe(Employee employee) {
+        return employee.designation() + " " + employee.getId() + " (" + employee.getName() + ")";
     }
 }

@@ -1,6 +1,7 @@
 package com.newgen.ems.app;
 
 import com.newgen.ems.model.*;
+import com.newgen.ems.repository.ActivityLog;
 import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
 
@@ -64,6 +65,7 @@ public class Main {
         demonstrateObjectMethods(manager, developer, employeeRepository);
         demonstrateWrapperClasses(employeeRepository);
         demonstrateLists(employeeRepository);
+        demonstrateLinkedList(employeeRepository);
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -75,6 +77,37 @@ public class Main {
 //        // we'll override it when we cover java.lang.Object.
 //        System.out.println();
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+
+    }
+
+    private static void demonstrateLinkedList(EmployeeRepository employeeRepository) {
+
+        System.out.println();
+        System.out.println("=== Section 18 L LinkedList ===");
+
+        printNumbered("Recent activity (newest first): ", employeeRepository.history());
+
+        var smallLog = new ActivityLog(3);
+
+        for(int i=1 ;i<=5;i++) {
+            smallLog.record("entry " + i);
+        }
+        printNumbered("Capacity-3 log after 5 entries (newest first):", smallLog.latestFirst());
+
+    }
+
+    private static void printNumbered(String title, List<String> history) {
+        System.out.println(title);
+
+        if (history.isEmpty()) {
+            System.out.println(" (none) ");
+        }
+
+        int number = 1;
+
+        for( String item : history) {
+            System.out.print("  " + number++ + ". " + item);
+        }
 
     }
 
@@ -241,6 +274,7 @@ public class Main {
                  System.out.println("5. List employees sorted");
                  System.out.println("6. Remove an employee by id");
                  System.out.println("7. Remove a whole department");
+                 System.out.println("8. Show recent activity");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -270,9 +304,10 @@ public class Main {
                      case 5 -> listSorted(sc, employeeRepository);
                      case 6 -> removeEmployee(sc, employeeRepository);
                      case 7 -> removeDepartment(sc, employeeRepository);
+                     case 8 -> printNumbered("Recent activity (newest first):", employeeRepository.history());
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 7");
+                         System.out.println("Invalid option Choose betwen 0 to 8");
                      }
                  }
                  System.out.println("Goodbye!");
