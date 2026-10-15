@@ -6,9 +6,14 @@ import java.util.*;
 
 public class EmployeeRepository {
 
+    private static final int ACTIVITY_LIMIT = 10;
+    private static final int REMOVED_LIMIT = 5;
+
+
     private static final int HISTORY_LIMIT = 10;
     private final List<Employee> employees = new ArrayList<>();
-    private final ActivityLog activity = new ActivityLog(HISTORY_LIMIT);
+    private final BoundedHistory<String> activity = new BoundedHistory<>(ACTIVITY_LIMIT);
+    private final BoundedHistory<Employee> recentlyRemoved = new BoundedHistory<>(REMOVED_LIMIT);
 
     public void add(Employee employee) {
 
@@ -69,7 +74,7 @@ public class EmployeeRepository {
 
     }
 
-    public List<Employee> findAllSorted(Comparator<Employee> order) {
+    public List<Employee> findAllSorted(Comparator<? super Employee> order) {
         List<Employee> listOfEmloyee = new ArrayList<>(employees);
         listOfEmloyee.sort(order);
         return Collections.unmodifiableList(listOfEmloyee);
@@ -81,6 +86,7 @@ public class EmployeeRepository {
         // same-class-and-same-id rule is what makes this find the right one.
         employees.remove(employee);
         activity.record("Removed  " + describe(employee));
+        recentlyRemoved.record(employee);
         return employee;
     }
 
@@ -88,8 +94,10 @@ public class EmployeeRepository {
         int removed = 0;
         Iterator<Employee> iterator = employees.iterator();
         while (iterator.hasNext()) {
-            if (iterator.next().getDepartment().equalsIgnoreCase(department)) {
+            Employee current  = iterator.next();
+            if (current.getDepartment().equalsIgnoreCase(department)) {
                 iterator.remove();
+                recentlyRemoved.record(current);
                 removed++;
             }
         }
@@ -97,6 +105,10 @@ public class EmployeeRepository {
             activity.record("Removed " + removed + " employee(s) from " + department);
         }
         return removed;
+    }
+
+    public List<Employee> recentlyRemoved() {
+        return recentlyRemoved.latestFirst();
     }
 
     public List<String> history() {

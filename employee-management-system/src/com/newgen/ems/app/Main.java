@@ -1,7 +1,7 @@
 package com.newgen.ems.app;
 
 import com.newgen.ems.model.*;
-import com.newgen.ems.repository.ActivityLog;
+import com.newgen.ems.repository.BoundedHistory;
 import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
 
@@ -23,10 +23,7 @@ public class Main {
         employeeRepository.add(inter);
         employeeRepository.add(secondDeveloper);
 
-        //print salary of every employee
-        for (Employee employee : employeeRepository.findAll()) {
-            printPayslip(employee);
-        }
+        printPayslips(employeeRepository.findAll());
 
         // Linear search by id.
         int searchId = 103;
@@ -66,6 +63,8 @@ public class Main {
         demonstrateWrapperClasses(employeeRepository);
         demonstrateLists(employeeRepository);
         demonstrateLinkedList(employeeRepository);
+        demonstrateGenerics(employeeRepository, developer, secondDeveloper);
+
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -80,6 +79,63 @@ public class Main {
 
     }
 
+    private static void demonstrateGenerics(EmployeeRepository employeeRepository, Developer developer, Developer secondDeveloper) {
+
+        System.out.println();
+        System.out.println();
+        System.out.println("=== Section 19: generics ===");
+
+
+        BoundedHistory<String> notes = new BoundedHistory<>(2);
+        notes.record("first");
+        notes.record("second");
+        notes.record("third");
+
+        BoundedHistory<Integer> ids = new BoundedHistory<>(3);
+        for (int id : employeeRepository.findAllIds()) {
+            ids.record(id);
+        }
+
+        BoundedHistory<Employee> team = new BoundedHistory<>(2);
+        for (Employee employee : employeeRepository.findAll()) {
+            team.record(employee);
+        }
+
+        Employee mostRecent = team.latestFirst().get(0);
+        System.out.printf("%-34s: %s%n", "BoundedHistory<String>", notes.latestFirst());
+        System.out.printf("%-34s: %s%n", "BoundedHistory<Integer>", ids.latestFirst());
+        System.out.printf("%-34s: %s%n", "BoundedHistory<Employee> newest", mostRecent.getName());
+
+
+        List<Developer> developers = List.of(developer, secondDeveloper);
+        printPayslips(developers);
+
+        Comparator<Payable> byPay = new PayComparator();
+
+        List<String> highestPaidFirst = new ArrayList<>();
+        for (Employee employee : employeeRepository.findAllSorted(byPay)) {
+            highestPaidFirst.add(employee.getName());
+        }
+
+        System.out.printf("%-34s: %s%n", "Highest paid first", String.join(", ", highestPaidFirst));
+
+        Employee firstEmployee = firstOf(employeeRepository.findAll());
+        String newestActivity = firstOf(employeeRepository.history());
+        System.out.printf("%-34s: %s%n", "firstOf(findAll())", firstEmployee.getName());
+        System.out.printf("%-34s: %s%n", "firstOf(history())", newestActivity);
+
+    }
+
+    private static <T> T firstOf(List<T> items) {
+        return items.get(0);
+    }
+
+    private static void printPayslips(List<? extends Employee> employees) {
+        for (Employee employee : employees) {
+            printPayslip(employee);
+        }
+    }
+
     private static void demonstrateLinkedList(EmployeeRepository employeeRepository) {
 
         System.out.println();
@@ -87,7 +143,7 @@ public class Main {
 
         printNumbered("Recent activity (newest first): ", employeeRepository.history());
 
-        var smallLog = new ActivityLog(3);
+        BoundedHistory<String> smallLog = new BoundedHistory<>(3);
 
         for(int i=1 ;i<=5;i++) {
             smallLog.record("entry " + i);
@@ -96,7 +152,7 @@ public class Main {
 
     }
 
-    private static void printNumbered(String title, List<String> history) {
+    private static void printNumbered(String title, List<?> history) {
         System.out.println(title);
 
         if (history.isEmpty()) {
@@ -105,10 +161,9 @@ public class Main {
 
         int number = 1;
 
-        for( String item : history) {
+        for( Object item : history) {
             System.out.print("  " + number++ + ". " + item);
         }
-
     }
 
     private static void demonstrateLists(EmployeeRepository employeeRepository) {
@@ -275,6 +330,7 @@ public class Main {
                  System.out.println("6. Remove an employee by id");
                  System.out.println("7. Remove a whole department");
                  System.out.println("8. Show recent activity");
+                 System.out.println("9. Show recently removed employees");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -294,20 +350,16 @@ public class Main {
                              System.out.println(e.getMessage());
                          }
                      }
-                     case 3 -> {
-                         for (Employee employee : employeeRepository.findAll()) {
-                             printPayslip(employee);
-                         }
-
-                     }
+                     case 3 -> printPayslips(employeeRepository.findAll());
                      case 4 -> listDepartment(sc, employeeRepository);
                      case 5 -> listSorted(sc, employeeRepository);
                      case 6 -> removeEmployee(sc, employeeRepository);
                      case 7 -> removeDepartment(sc, employeeRepository);
                      case 8 -> printNumbered("Recent activity (newest first):", employeeRepository.history());
+                     case 9 -> printNumbered("Recently removed (newest first):", employeeRepository.recentlyRemoved());
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 8");
+                         System.out.println("Invalid option Choose betwen 0 to 9");
                      }
                  }
                  System.out.println("Goodbye!");
@@ -343,28 +395,25 @@ public class Main {
             System.out.println("No employees found in Department " + department);
         }
 
-        for(Employee employee : matches) {
-            System.out.println(Payslip.of(employee));
-        }
+        printPayslips(matches);
     }
 
 
     private static void listSorted(Scanner scanner, EmployeeRepository repository) {
         System.out.println("1. By id  2. By name  3. By monthly pay (highest first)");
         System.out.print("Sort by: ");
-        Comparator<Employee> order = switch (readChoice(scanner)) {
+        Comparator<? super Employee> order = switch (readChoice(scanner)) {
             case 1 -> Comparator.naturalOrder();
             case 2 -> new EmployeeNameComparator();
-            case 3 -> new EmployeeSalaryComparator();
+            case 3 -> new PayComparator();
             default -> null;
         };
         if (order == null) {
             System.out.println("Please choose 1-3.");
             return;
         }
-        for (Employee employee : repository.findAllSorted(order)) {
-            System.out.println(Payslip.of(employee));
-        }
+
+        printPayslips(repository.findAllSorted(order));
 
     }
 
