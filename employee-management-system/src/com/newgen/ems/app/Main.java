@@ -64,7 +64,7 @@ public class Main {
         demonstrateLists(employeeRepository);
         demonstrateLinkedList(employeeRepository);
         demonstrateGenerics(employeeRepository, developer, secondDeveloper);
-
+        demonstrateMap(employeeRepository);
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -76,6 +76,62 @@ public class Main {
 //        // we'll override it when we cover java.lang.Object.
 //        System.out.println();
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+
+    }
+
+    private static void demonstrateMap(EmployeeRepository employeeRepository) {
+        System.out.println();
+        System.out.println("=== Section 20: maps ===");
+
+        Map<String, Double> hashed = new HashMap<>();
+        Map<String, Double> sorted = new TreeMap<>();
+        LinkedHashMap<String, Double> insertion = new LinkedHashMap<>();
+
+        for(Employee employee : employeeRepository.findAll()) {
+
+            double pay = employee.calculateMonthlySalary();
+
+            hashed.put(employee.getName(), pay);
+            sorted.put(employee.getName(), pay);
+            insertion.put(employee.getName(), pay);
+
+        }
+
+        System.out.printf("%-34s: %s%n", "HashMap (no promised order)", hashed.keySet());
+        System.out.printf("%-34s: %s%n", "TreeMap (keys sorted)", sorted.keySet());
+        System.out.printf("%-34s: %s%n", "LinkedHashMap (insertion order)", insertion.keySet());
+
+
+        SequencedMap<String, Double> newestFirst = insertion.reversed();
+
+        System.out.printf("%-34s: %s%n", "LinkedHashMap reversed()", newestFirst.keySet());
+
+        System.out.printf("%-34s: %s%n", "get(\"Rahul Verma\")", sorted.get("Rahul Verma"));
+        System.out.printf("%-34s: %s%n", "get(\"Nobody\") -- not a key", sorted.get("Nobody"));
+
+        double total = 0;
+
+        for(double pay : sorted.values()) {
+            total += pay;
+        }
+
+        System.out.printf("%-34s: %.2f%n", "Total monthly payroll (values())", total);
+
+        for (Map.Entry<String, Double> entry : sorted.entrySet()) {
+            System.out.printf("  %-32s %,.2f%n", entry.getKey(), entry.getValue());
+        }
+
+        // Map.of builds an immutable map, like List.of and Set.of: put() fails.
+        Map<String, Double> rates = Map.of("java", 0.10, "python", 0.10);
+
+        try {
+            rates.put("kotlin", 0.10);
+
+        } catch (UnsupportedOperationException e) {
+            System.out.printf("%-34s: %s%n", "Map.of(...).put(...)", e.getClass().getSimpleName());
+        }
+
+
 
     }
 
@@ -331,6 +387,7 @@ public class Main {
                  System.out.println("7. Remove a whole department");
                  System.out.println("8. Show recent activity");
                  System.out.println("9. Show recently removed employees");
+                 System.out.println("10. show headcount by department");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -357,9 +414,10 @@ public class Main {
                      case 7 -> removeDepartment(sc, employeeRepository);
                      case 8 -> printNumbered("Recent activity (newest first):", employeeRepository.history());
                      case 9 -> printNumbered("Recently removed (newest first):", employeeRepository.recentlyRemoved());
+                     case 10 -> showHeadCount(employeeRepository);
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 9");
+                         System.out.println("Invalid option Choose betwen 0 to 10");
                      }
                  }
                  System.out.println("Goodbye!");
@@ -368,6 +426,21 @@ public class Main {
         }
 
     }
+
+    private static void showHeadCount(EmployeeRepository employeeRepository) {
+            System.out.println("Headcount By Department:");
+
+            Map<String, Integer> headcount = employeeRepository.headCountByDepartment();
+
+            if(headcount.isEmpty()) {
+                System.out.println("No employees found");
+            }
+
+            for( Map.Entry<String, Integer> entry : headcount.entrySet()) {
+                System.out.println(" " + entry.getKey() + ": " + entry.getValue());
+            }
+    }
+
 
     private static void removeDepartment(Scanner scanner, EmployeeRepository repository) {
         System.out.print("Department to remove: ");

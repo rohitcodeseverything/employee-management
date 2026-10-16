@@ -1,10 +1,16 @@
 package com.newgen.ems.model;
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Developer extends Employee implements Promotable {
 
     private String primaryLanguage;
+
+    private static final Map<String, Double> SKILL_BONUS_RATES =
+            Map.of("java", 0.10, "python", 0.10);
+    private static final double DEFAULT_STATIC_RATE = 0.05;
 
     public Developer(int id, String name, String department, double baseSalary,  String primaryLanguage) {
         super(id, name, department, baseSalary);
@@ -17,9 +23,9 @@ public class Developer extends Employee implements Promotable {
 
     @Override
     public double calculateMonthlySalary() {
-       boolean highDemandSkill = (primaryLanguage.equalsIgnoreCase("java") ||
-                primaryLanguage.equalsIgnoreCase("python"));
-      double skillBonus =  highDemandSkill ? baseSalary * 0.10 : baseSalary * 0.05;
+      Double listedRate = SKILL_BONUS_RATES.get(primaryLanguage);
+      double bonusRate = listedRate != null ? listedRate : DEFAULT_STATIC_RATE;
+      double skillBonus = baseSalary * bonusRate;
       return baseSalary + skillBonus;
     }
 

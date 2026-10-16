@@ -11,42 +11,30 @@ public class EmployeeRepository {
 
 
     private static final int HISTORY_LIMIT = 10;
-    private final List<Employee> employees = new ArrayList<>();
+    private final Map<Integer, Employee> employees = new LinkedHashMap<>();
     private final BoundedHistory<String> activity = new BoundedHistory<>(ACTIVITY_LIMIT);
     private final BoundedHistory<Employee> recentlyRemoved = new BoundedHistory<>(REMOVED_LIMIT);
 
     public void add(Employee employee) {
-
-        if (search(employee.getId()) != null)  {
+        if (employees.get(employee.getId()) != null)  {
             throw new DuplicateEmployeeIdException("Employee id " + employee.getId() + " already exists");
         }
-
-        employees.add(employee);
+        employees.put(employee.getId(), employee);
         activity.record("Added  " + describe(employee));
     }
 
     public Employee findById(int id) throws EmployeeNotFoundException {
 
-        Employee employee = search(id);
+        Employee employee = employees.get(id);
         if (employee == null) {
             throw new EmployeeNotFoundException("No employee found with id" + id);
         }
         return employee;
     }
 
-    // Section 12's
-    private Employee search(int id) {
-
-        for (Employee employee : employees) {
-                if (employee.getId() == id) {
-                    return employee;
-                }
-        }
-        return null;
-    }
 
     public List<Employee> findAll() {
-        return Collections.unmodifiableList(new ArrayList<>(employees));
+        return Collections.unmodifiableList(new ArrayList<>(employees.values()));
     }
 
     public int size() {
@@ -55,7 +43,7 @@ public class EmployeeRepository {
 
     public List<Integer> findAllIds() {
         List<Integer> ids = new ArrayList<>();
-        for(Employee employee : employees) {
+        for(Employee employee : employees.values()) {
            ids.add(employee.getId());
         }
         return ids;
@@ -64,7 +52,7 @@ public class EmployeeRepository {
     public List<Employee> findByDepartment(String department) {
         List<Employee> matches = new ArrayList<>();
 
-        for(Employee employee : employees) {
+        for(Employee employee : employees.values()) {
             if(employee.getDepartment().equalsIgnoreCase(department)) {
                 matches.add(employee);
             }
@@ -75,7 +63,7 @@ public class EmployeeRepository {
     }
 
     public List<Employee> findAllSorted(Comparator<? super Employee> order) {
-        List<Employee> listOfEmloyee = new ArrayList<>(employees);
+        List<Employee> listOfEmloyee = new ArrayList<>(employees.values());
         listOfEmloyee.sort(order);
         return Collections.unmodifiableList(listOfEmloyee);
     }
@@ -84,7 +72,7 @@ public class EmployeeRepository {
         Employee employee = findById(id);
         // remove(Object) locates the element with equals() -- Section 15's
         // same-class-and-same-id rule is what makes this find the right one.
-        employees.remove(employee);
+        employees.remove(id);
         activity.record("Removed  " + describe(employee));
         recentlyRemoved.record(employee);
         return employee;
@@ -92,7 +80,7 @@ public class EmployeeRepository {
 
     public int removeDepartment(String department) {
         int removed = 0;
-        Iterator<Employee> iterator = employees.iterator();
+        Iterator<Employee> iterator = employees.values().iterator();
         while (iterator.hasNext()) {
             Employee current  = iterator.next();
             if (current.getDepartment().equalsIgnoreCase(department)) {
@@ -117,5 +105,15 @@ public class EmployeeRepository {
 
     private static String describe(Employee employee) {
         return employee.designation() + " " + employee.getId() + " (" + employee.getName() + ")";
+    }
+
+    public Map<String, Integer> headCountByDepartment() {
+        Map<String, Integer> headcount = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for(Employee employee : employees.values()) {
+            Integer soFar = headcount.get(employee.getDepartment()); // null for first time
+            headcount.put(employee.getDepartment(), soFar == null ? 1 : soFar + 1);
+        }
+
+        return Collections.unmodifiableMap(headcount);
     }
 }
