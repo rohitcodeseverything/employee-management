@@ -1,7 +1,10 @@
 package com.newgen.ems.model;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 
 public abstract class Employee implements Payable , Cloneable, Comparable<Employee> {
 
@@ -10,6 +13,8 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
     private String department;
     protected double baseSalary;
     private boolean active;
+
+    private Set<String> skills = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
     public Employee(int id, String name, String department, double baseSalary) {
         this.id = id;
@@ -63,7 +68,18 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
     }
 
 
+    public boolean addSkill(String skill) {
 
+        String trimmed =  skill.trim();
+        if(trimmed.isEmpty()) {
+            return false;
+        }
+        return skills.add(trimmed);
+    }
+
+    public Set<String> getSkills() {
+        return Collections.unmodifiableSet(skills);
+    }
 
 
     @Override
@@ -76,6 +92,7 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
                 ", department='" + department + '\'' +
                 ", baseSalary=" + baseSalary +
                 ", active=" + active +
+                ", skills=" + skills +
                 (extras.isEmpty() ? "" : ", " + extras) +
                 '}';
     }
@@ -98,7 +115,10 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
     // (a skills collection, say), the copy has to duplicate that too.
     @Override
     public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        Employee copy = (Employee) super.clone();
+        copy.skills = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        copy.skills.addAll(skills);
+        return copy;
     }
 
     @Override

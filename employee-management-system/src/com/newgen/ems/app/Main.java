@@ -17,6 +17,17 @@ public class Main {
         Intern inter = new Intern(103, "Priya Singh", "Engineering", 15_000, "Asha Rao");
         Developer secondDeveloper = new Developer(104, "Virat Kohli", "Engineering", 60_000, "Python");
 
+        manager.addSkill("Leadership");
+        manager.addSkill("Java");
+        developer.addSkill("Java");
+        developer.addSkill("SQL");
+        developer.addSkill("Docker");
+        developer.addSkill("java");     // already there (ignoring case): ignored
+        secondDeveloper.addSkill("Python");
+        secondDeveloper.addSkill("SQL");
+        inter.addSkill("Java");
+
+
         EmployeeRepository employeeRepository = new EmployeeRepository();
         employeeRepository.add(manager);
         employeeRepository.add(developer);
@@ -65,6 +76,8 @@ public class Main {
         demonstrateLinkedList(employeeRepository);
         demonstrateGenerics(employeeRepository, developer, secondDeveloper);
         demonstrateMap(employeeRepository);
+        demonstrateSets(employeeRepository, developer);
+
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -77,6 +90,88 @@ public class Main {
 //        System.out.println();
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
 
+    }
+
+    private static void demonstrateSets(EmployeeRepository employeeRepository, Developer developer) {
+
+        System.out.println();
+        System.out.println("=== Section 21: sets ===");
+
+        List<String> typed = List.of("Java", "SQL", "Docker", "Python", "Leadership", "Java");
+
+        Set<String> hashed = new HashSet<>();
+        Set<String> sorted = new TreeSet<>();
+        LinkedHashSet<String> insertion = new LinkedHashSet<>();
+
+        for (String skill : typed) {
+            hashed.add(skill);
+            sorted.add(skill);
+            insertion.add(skill);
+        }
+
+        System.out.printf("%-34s: %s%n", "HashSet (no promised order)", hashed);
+        System.out.printf("%-34s: %s%n", "TreeSet (sorted)", sorted);
+        System.out.printf("%-34s: %s%n", "LinkedHashSet (insertion order)", insertion);
+
+        SequencedSet<String> newestFirst = insertion.reversed();
+        System.out.printf("%-34s: %s%n", "LinkedHashSet reversed()", newestFirst);
+        System.out.printf("%-34s: %d typed, %d kept%n", "Duplicates are ignored", typed.size(), insertion.size());
+        System.out.printf("%-34s: %b%n", "add(\"Java\") again says new?", insertion.add("Java"));
+
+
+        Set<Employee> team = new HashSet<>();
+        team.add(developer);
+        var rahulFromHr = new Developer(102, "Rahul V.", "Engineering", 70_000, "Kotlin");
+        System.out.printf("%-34s: %b%n", "team.add(same id, other object)", team.add(rahulFromHr));
+        var temp = new Intern(900, "Temp", "Engineering", 1_000, "Nobody");
+        team.add(temp);
+        temp.addSkill("Mentoring");
+        System.out.printf("%-34s: %b%n", "contains(temp) after addSkill", team.contains(temp));
+
+        Set<Employee> javaPeople = new LinkedHashSet<>(employeeRepository.findBySkills(Set.of("Java")));
+        Set<Employee> sqlPeople = new LinkedHashSet<>(employeeRepository.findBySkills(Set.of("SQL")));
+        Set<Employee> both = new LinkedHashSet<>(javaPeople);
+        both.retainAll(sqlPeople);
+        Set<Employee> either = new LinkedHashSet<>(javaPeople);
+        either.addAll(sqlPeople);
+        Set<Employee> javaOnly = new LinkedHashSet<>(javaPeople);
+        javaOnly.removeAll(sqlPeople);
+        System.out.printf("%-34s: %s%n", "knows Java", names(javaPeople));
+        System.out.printf("%-34s: %s%n", "knows SQL", names(sqlPeople));
+        System.out.printf("%-34s: %s%n", "Java AND SQL (retainAll)", names(both));
+        System.out.printf("%-34s: %s%n", "Java OR SQL (addAll)", names(either));
+        System.out.printf("%-34s: %s%n", "Java but NOT SQL (removeAll)", names(javaOnly));
+        System.out.printf("%-34s: %b%n", "Java people contain the AND set", javaPeople.containsAll(both));
+
+        Set<Employee> byPay = new TreeSet<>(new PayComparator());
+        byPay.add(new Intern(901, "Sam", "Engineering", 15_000, "Nobody"));
+        byPay.add(new Intern(902, "Alex", "Engineering", 15_000, "Nobody"));
+        System.out.printf("%-34s: %s%n", "byPay", byPay);
+        System.out.printf("%-34s: %d%n", "TreeSet by pay, 2 on the same pay", byPay.size());
+
+        try {
+            developer.getSkills().add("Sneaky");
+        } catch (UnsupportedOperationException ex) {
+            System.out.printf("%-34s: %s%n", "getSkills().add(...)", ex.getClass().getSimpleName());
+        }
+
+        try {
+            Employee copy = (Employee) developer.clone();
+            copy.addSkill("Rust");
+            System.out.printf("%-34s: %b%n", "clone has the new skill", copy.getSkills().contains("Rust"));
+            System.out.printf("%-34s: %b%n", "original has it too", developer.getSkills().contains("Rust"));
+        } catch (CloneNotSupportedException ex) {
+            System.out.println("Can't clone: " + ex.getMessage());
+        }
+
+    }
+
+    private static List<String> names(Collection<? extends Employee> employees) {
+        List<String> names = new ArrayList<>();
+        for (Employee employee : employees) {
+            names.add(employee.getName());
+        }
+        return names;
     }
 
     private static void demonstrateMap(EmployeeRepository employeeRepository) {
@@ -186,7 +281,7 @@ public class Main {
         return items.get(0);
     }
 
-    private static void printPayslips(List<? extends Employee> employees) {
+    private static void printPayslips(Collection<? extends Employee> employees) {
         for (Employee employee : employees) {
             printPayslip(employee);
         }
@@ -388,6 +483,8 @@ public class Main {
                  System.out.println("8. Show recent activity");
                  System.out.println("9. Show recently removed employees");
                  System.out.println("10. show headcount by department");
+                 System.out.println("11. Add a skill to an employee");
+                 System.out.println("12. Find employees by skills");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -415,9 +512,11 @@ public class Main {
                      case 8 -> printNumbered("Recent activity (newest first):", employeeRepository.history());
                      case 9 -> printNumbered("Recently removed (newest first):", employeeRepository.recentlyRemoved());
                      case 10 -> showHeadCount(employeeRepository);
+                     case 11 -> addSkill(sc, employeeRepository);
+                     case 12 -> findBySkills(sc, employeeRepository);
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 10");
+                         System.out.println("Invalid option Choose betwen 0 to 12");
                      }
                  }
                  System.out.println("Goodbye!");
@@ -426,6 +525,48 @@ public class Main {
         }
 
     }
+
+
+    private static void addSkill(Scanner scanner, EmployeeRepository repository) {
+        System.out.println("Skills on file: " + repository.allSkills());
+        System.out.print("Employee id: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine().trim());
+            Employee employee = repository.findById(id);
+            System.out.print("Skill to add to " + employee.getName() + ": ");
+            String skill = scanner.nextLine();
+            if (repository.addSkill(id, skill)) {
+                System.out.println("Added " + skill.trim() + " to " + employee.getName());
+            } else {
+                System.out.println("Nothing added: that skill is blank, or " + employee.getName() + " already has it.");
+            }
+        } catch (NumberFormatException | EmployeeNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
+    private static void findBySkills(Scanner scanner, EmployeeRepository repository) {
+        System.out.println("Skills on file: " + repository.allSkills());
+        System.out.print("Skills they must ALL have (comma separated): ");
+        Set<String> required = new LinkedHashSet<>();
+        for (String skill : scanner.nextLine().split(",")) {
+            String trimmed = skill.trim();
+            if (!trimmed.isEmpty()) {
+                required.add(trimmed);
+            }
+        }
+        if (required.isEmpty()) {
+            System.out.println("Please enter at least one skill.");
+            return;
+        }
+        Set<Employee> matches = repository.findBySkills(required);
+        if (matches.isEmpty()) {
+            System.out.println("No employee has all of: " + required);
+        }
+        printPayslips(matches);
+    }
+
+
 
     private static void showHeadCount(EmployeeRepository employeeRepository) {
             System.out.println("Headcount By Department:");

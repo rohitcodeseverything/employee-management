@@ -95,6 +95,38 @@ public class EmployeeRepository {
         return removed;
     }
 
+    public boolean addSkill(int id, String skill) throws EmployeeNotFoundException {
+        Employee employee = findById(id);
+        boolean added = employee.addSkill(skill);
+        if(added) {
+            activity.record("Added skill " + skill.trim() + " to " + describe(employee));
+        }
+        return added;
+    }
+
+    public Set<Employee> findBySkills(Set<String> required) {
+
+        Set<Employee> matches = new LinkedHashSet<>();
+        for(Employee employee : employees.values()) {
+
+            if(employee.getSkills().containsAll(required)) {
+                matches.add(employee);
+            }
+        }
+
+        return Collections.unmodifiableSet(matches);
+
+    }
+
+    public Set<String> allSkills() {
+       Set<String> all = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+       for(Employee employee : employees.values()) {
+           all.addAll(employee.getSkills());
+       }
+       return Collections.unmodifiableSet(all);
+    }
+
+
     public List<Employee> recentlyRemoved() {
         return recentlyRemoved.latestFirst();
     }
