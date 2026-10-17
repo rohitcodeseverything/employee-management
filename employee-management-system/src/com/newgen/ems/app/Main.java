@@ -12,10 +12,10 @@ public class Main {
 
         System.out.printf("[====Employee Management System Application====]\n");
 
-        Manager manager = new Manager(101, "Asha Rao", "Engineering", 90_000, 6);
-        Developer developer = new Developer(102, "Rahul Verma", "Engineering", 65_000, "Java");
-        Intern inter = new Intern(103, "Priya Singh", "Engineering", 15_000, "Asha Rao");
-        Developer secondDeveloper = new Developer(104, "Virat Kohli", "Engineering", 60_000, "Python");
+        Manager manager = new Manager(101, "Asha Rao", Department.ENGINEERING, 90_000, 6);
+        Developer developer = new Developer(102, "Rahul Verma", Department.ENGINEERING, 65_000, "Java");
+        Intern inter = new Intern(103, "Priya Singh", Department.ENGINEERING, 15_000, "Asha Rao");
+        Developer secondDeveloper = new Developer(104, "Virat Kohli", Department.ENGINEERING, 60_000, "Python");
 
         manager.addSkill("Leadership");
         manager.addSkill("Java");
@@ -77,6 +77,7 @@ public class Main {
         demonstrateGenerics(employeeRepository, developer, secondDeveloper);
         demonstrateMap(employeeRepository);
         demonstrateSets(employeeRepository, developer);
+        demonstrateEnums(employeeRepository, developer);
 
 
         System.out.println();
@@ -89,6 +90,63 @@ public class Main {
 //        // we'll override it when we cover java.lang.Object.
 //        System.out.println();
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
+
+    }
+
+    private static void demonstrateEnums(EmployeeRepository employeeRepository, Developer developer) {
+        System.out.println();
+        System.out.println("=== Section 22: enums ===");
+
+        System.out.printf("%-34s: %s%n", "Department.values()", Arrays.toString(Department.values()));
+
+        Department hr = Department.HUMAN_RESOURCES;
+        System.out.printf("%-34s: %s, %d%n", "HUMAN_RESOURCES name(), ordinal()", hr.name(), hr.ordinal());
+        System.out.printf("%-34s: %s%n", "HUMAN_RESOURCES getDisplayName()", hr.getDisplayName());
+        System.out.printf("%-34s: %s%n", "values()[2]", Department.values()[2]);
+        System.out.printf("%-34s: %s%n", "valueOf(\"SALES\")", Department.valueOf("SALES"));
+
+        try {
+            Department.valueOf("Sales");
+        } catch (IllegalArgumentException ex) {
+            System.out.printf("%-34s: %s%n", "valueOf(\"Sales\") -- wrong case", ex.getClass().getSimpleName());
+        }
+
+        System.out.printf("%-34s: %b%n", "getDepartment() == ENGINEERING",
+                developer.getDepartment() == Department.ENGINEERING);
+
+        for (EmployeeStatus status : EmployeeStatus.values()) {
+            String note = switch (status) {
+                case ACTIVE -> "eligible for the annual stock grant";
+                case ON_LEAVE -> "on the payroll, back soon; no stock grant yet";
+                case ON_NOTICE -> "on the payroll until the last day; no stock grant";
+            };
+            System.out.printf("%-34s: %s%n", status.getDisplayName(), note);
+        }
+
+        EnumSet<Department> all = EnumSet.allOf(Department.class);
+        EnumSet<Department> middle = EnumSet.range(Department.HUMAN_RESOURCES, Department.FINANCE);
+        EnumSet<Department> real = EnumSet.complementOf(EnumSet.of(Department.UNASSIGNED));
+        System.out.printf("%-34s: %s%n", "EnumSet.allOf(Department.class)", all);
+        System.out.printf("%-34s: %s%n", "EnumSet.range(HR, FINANCE)", middle);
+        System.out.printf("%-34s: %s%n", "complementOf(of(UNASSIGNED))", real);
+        System.out.printf("%-34s: %s%n", "Nobody works in", employeeRepository.departmentWithNoEmployees());
+
+        EmployeeRepository scratch = new EmployeeRepository();
+        scratch.add(new Intern(900, "Temp A", Department.SALES, 1_000, "Nobody"));
+        scratch.add(new Intern(901, "Temp B", Department.FINANCE, 1_000, "Nobody"));
+        scratch.add(new Intern(902, "Temp C", Department.ENGINEERING, 1_000, "Nobody"));
+        scratch.add(new Intern(903, "Temp D", Department.SALES, 1_000, "Nobody"));
+        System.out.printf("%-34s: %s%n", "headcount (declaration order)", scratch.headCountByDepartment());
+
+        try {
+            boolean first = scratch.changeStatus(900, EmployeeStatus.ON_LEAVE);
+            boolean again = scratch.changeStatus(900, EmployeeStatus.ON_LEAVE);
+            System.out.printf("%-34s: %b, then %b%n", "changeStatus(ON_LEAVE) twice", first, again);
+            System.out.printf("%-34s: %s%n", "latest activity", scratch.history().get(0));
+            System.out.printf("%-34s: %b%n", "isActive() once on leave", scratch.findById(900).isActive());
+        } catch (EmployeeNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        }
 
     }
 
@@ -121,9 +179,9 @@ public class Main {
 
         Set<Employee> team = new HashSet<>();
         team.add(developer);
-        var rahulFromHr = new Developer(102, "Rahul V.", "Engineering", 70_000, "Kotlin");
+        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, "Kotlin");
         System.out.printf("%-34s: %b%n", "team.add(same id, other object)", team.add(rahulFromHr));
-        var temp = new Intern(900, "Temp", "Engineering", 1_000, "Nobody");
+        var temp = new Intern(900, "Temp", Department.ENGINEERING, 1_000, "Nobody");
         team.add(temp);
         temp.addSkill("Mentoring");
         System.out.printf("%-34s: %b%n", "contains(temp) after addSkill", team.contains(temp));
@@ -144,8 +202,8 @@ public class Main {
         System.out.printf("%-34s: %b%n", "Java people contain the AND set", javaPeople.containsAll(both));
 
         Set<Employee> byPay = new TreeSet<>(new PayComparator());
-        byPay.add(new Intern(901, "Sam", "Engineering", 15_000, "Nobody"));
-        byPay.add(new Intern(902, "Alex", "Engineering", 15_000, "Nobody"));
+        byPay.add(new Intern(901, "Sam", Department.ENGINEERING, 15_000, "Nobody"));
+        byPay.add(new Intern(902, "Alex", Department.ENGINEERING, 15_000, "Nobody"));
         System.out.printf("%-34s: %s%n", "byPay", byPay);
         System.out.printf("%-34s: %d%n", "TreeSet by pay, 2 on the same pay", byPay.size());
 
@@ -324,7 +382,7 @@ public class Main {
         List<Employee> everyone =  employeeRepository.findAll();
 
          try {
-             everyone.add(new Intern(999, "Komal", "Engineering", 1, "Nobody"));
+             everyone.add(new Intern(999, "Komal", Department.ENGINEERING, 1, "Nobody"));
          } catch (UnsupportedOperationException ex) {
              System.out.printf("%-34s: %s%n", "findAll().add(...)", ex.getClass().getSimpleName());
          }
@@ -421,7 +479,7 @@ public class Main {
 
         // equals()/hashCode(): same id means same employee, even when the
         // details differ -- but it's still a different object in memory.
-        var rahulFromHr = new Developer(102, "Rahul V.", "Engineering", 70_000, "Kotlin");
+        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, "Kotlin");
         System.out.printf("%-34s: %b%n", "developer == rahulFromHr", developer == rahulFromHr);
         System.out.printf("%-34s: %b%n", "developer.equals(rahulFromHr)", developer.equals(rahulFromHr));
         System.out.printf("%-34s: %b%n", "developer.equals(manager)", developer.equals(manager));
@@ -485,6 +543,7 @@ public class Main {
                  System.out.println("10. show headcount by department");
                  System.out.println("11. Add a skill to an employee");
                  System.out.println("12. Find employees by skills");
+                 System.out.println("13. Change an employee's status");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -514,9 +573,10 @@ public class Main {
                      case 10 -> showHeadCount(employeeRepository);
                      case 11 -> addSkill(sc, employeeRepository);
                      case 12 -> findBySkills(sc, employeeRepository);
+                     case 13 -> changeStatus(sc, employeeRepository);
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 12");
+                         System.out.println("Invalid option Choose betwen 0 to 13");
                      }
                  }
                  System.out.println("Goodbye!");
@@ -571,13 +631,13 @@ public class Main {
     private static void showHeadCount(EmployeeRepository employeeRepository) {
             System.out.println("Headcount By Department:");
 
-            Map<String, Integer> headcount = employeeRepository.headCountByDepartment();
+            Map<Department, Integer> headcount = employeeRepository.headCountByDepartment();
 
             if(headcount.isEmpty()) {
                 System.out.println("No employees found");
             }
 
-            for( Map.Entry<String, Integer> entry : headcount.entrySet()) {
+            for( Map.Entry<Department, Integer> entry : headcount.entrySet()) {
                 System.out.println(" " + entry.getKey() + ": " + entry.getValue());
             }
     }
@@ -585,9 +645,61 @@ public class Main {
 
     private static void removeDepartment(Scanner scanner, EmployeeRepository repository) {
         System.out.print("Department to remove: ");
-        String department = scanner.nextLine().trim();
+        Department department = readDepartment(scanner);
         int removed = repository.removeDepartment(department);
-        System.out.println("Removed " + removed + " employee(s) from " + department);
+        System.out.println("Removed " + removed + " employee(s) from " + department.getDisplayName());
+    }
+
+    private static void changeStatus(Scanner scanner, EmployeeRepository repository) {
+
+        System.out.println("Employee id: ");
+        try{
+            int id = Integer.parseInt(scanner.nextLine().trim());
+            Employee employee = repository.findById(id);
+            System.out.println(employee.getName() + " is currently: " + employee.getStatus().getDisplayName());
+            EmployeeStatus status = readStatus(scanner);
+            if (status == null) {
+                System.out.println("Please choose 1-" + EmployeeStatus.values().length + ".");
+                return;
+            }
+            if (repository.changeStatus(id, status)) {
+                System.out.println(employee.getName() + " is now: " + status.getDisplayName());
+            } else {
+                System.out.println("Nothing changed: " + employee.getName() + " is already " + status.getDisplayName() + ".");
+            }
+
+        } catch(NumberFormatException | EmployeeNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        }
+
+    }
+
+    private static EmployeeStatus readStatus(Scanner scanner) {
+        EmployeeStatus[] statuses = EmployeeStatus.values();
+        System.out.println("Statuses:");
+        for (int i = 0; i < statuses.length; i++) {
+            System.out.println("  " + (i + 1) + ". " + statuses[i].getDisplayName());
+        }
+        System.out.print("Status number: ");
+        int choice = readChoice(scanner);
+        if (choice < 1 || choice > statuses.length) {
+            return null;
+        }
+        return statuses[choice - 1];
+    }
+
+    private static Department readDepartment(Scanner scanner) {
+        Department[] departments = Department.values();
+        System.out.println("Departments:");
+        for (int i = 0; i < departments.length; i++) {
+            System.out.println("  " + (i + 1) + ". " + departments[i].getDisplayName());
+        }
+        System.out.print("Department number: ");
+        int choice = readChoice(scanner);
+        if (choice < 1 || choice > departments.length) {
+            return null;
+        }
+        return departments[choice - 1];
     }
 
     private static void removeEmployee(Scanner scanner, EmployeeRepository repository) {
@@ -603,10 +715,15 @@ public class Main {
 
     private static void listDepartment(Scanner sc, EmployeeRepository employeeRepository) {
         System.out.print("Department: ");
-        String department = sc.nextLine().trim();
+        Department department = readDepartment(sc);
+        if(department == null) {
+            System.out.println("Please choose 1-" + Department.values().length + ".");
+            return;
+        }
+
         List<Employee> matches = employeeRepository.findByDepartment(department);
         if(matches.isEmpty()) {
-            System.out.println("No employees found in Department " + department);
+            System.out.println("No employees found in Department " + department.getDisplayName());
         }
 
         printPayslips(matches);
@@ -650,7 +767,7 @@ public class Main {
         String name = sc.nextLine().trim();
 
         System.out.print("Department: ");
-        String department = sc.nextLine().trim();
+        Department department = readDepartment(sc);
 
         System.out.print("Base salary: ");
         double baseSalary = Double.parseDouble(sc.nextLine().trim());
@@ -695,8 +812,10 @@ public class Main {
                 Monthly Pay : %.2f
                 --------------------------------
                 """, employee.getName(), employee.designation(),
-                employee.getDepartment(), employee.calculateMonthlySalary());
+                employee.getDepartment().getDisplayName(), employee.calculateMonthlySalary());
         System.out.println(payslip);
     }
+
+
 
 }

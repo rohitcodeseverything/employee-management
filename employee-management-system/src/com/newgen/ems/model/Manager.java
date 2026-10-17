@@ -4,7 +4,7 @@ public class Manager extends Employee implements Promotable{
 
     private int teamSize;
 
-    public Manager(int id, String name, String department, double baseSalary,  int teamSize) {
+    public Manager(int id, String name, Department department, double baseSalary,  int teamSize) {
         super(id, name, department, baseSalary);
         this.teamSize = teamSize;
     }

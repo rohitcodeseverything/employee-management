@@ -1,6 +1,8 @@
 package com.newgen.ems.repository;
 
+import com.newgen.ems.model.Department;
 import com.newgen.ems.model.Employee;
+import com.newgen.ems.model.EmployeeStatus;
 
 import java.util.*;
 
@@ -49,11 +51,11 @@ public class EmployeeRepository {
         return ids;
     }
 
-    public List<Employee> findByDepartment(String department) {
+    public List<Employee> findByDepartment(Department department) {
         List<Employee> matches = new ArrayList<>();
 
         for(Employee employee : employees.values()) {
-            if(employee.getDepartment().equalsIgnoreCase(department)) {
+            if(employee.getDepartment() == department) {
                 matches.add(employee);
             }
         }
@@ -78,19 +80,19 @@ public class EmployeeRepository {
         return employee;
     }
 
-    public int removeDepartment(String department) {
+    public int removeDepartment(Department department) {
         int removed = 0;
         Iterator<Employee> iterator = employees.values().iterator();
         while (iterator.hasNext()) {
             Employee current  = iterator.next();
-            if (current.getDepartment().equalsIgnoreCase(department)) {
+            if (current.getDepartment() == department) {
                 iterator.remove();
                 recentlyRemoved.record(current);
                 removed++;
             }
         }
         if(removed > 0) {
-            activity.record("Removed " + removed + " employee(s) from " + department);
+            activity.record("Removed " + removed + " employee(s) from " + department.getDisplayName());
         }
         return removed;
     }
@@ -139,8 +141,8 @@ public class EmployeeRepository {
         return employee.designation() + " " + employee.getId() + " (" + employee.getName() + ")";
     }
 
-    public Map<String, Integer> headCountByDepartment() {
-        Map<String, Integer> headcount = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    public Map<Department, Integer> headCountByDepartment() {
+        Map<Department, Integer> headcount = new TreeMap<>();
         for(Employee employee : employees.values()) {
             Integer soFar = headcount.get(employee.getDepartment()); // null for first time
             headcount.put(employee.getDepartment(), soFar == null ? 1 : soFar + 1);
@@ -148,4 +150,30 @@ public class EmployeeRepository {
 
         return Collections.unmodifiableMap(headcount);
     }
+
+    public boolean changeStatus(int id, EmployeeStatus status) throws EmployeeNotFoundException {
+        Employee employee = findById(id);
+        EmployeeStatus before = employee.getStatus();
+        if(before == status) {
+            return false;
+        }
+
+        employee.setStatus(status);
+        activity.record(
+                "Status of" + describe(employee) + " changes from" + before.getDisplayName() + " to " +
+                        status.getDisplayName());
+        return true;
+    }
+
+    public Set<Department> departmentWithNoEmployees() {
+        Set<Department> empty =
+                EnumSet.complementOf(EnumSet.of(Department.UNASSIGNED));
+        for(Employee employee : employees.values()) {
+            empty.remove(employee.getDepartment());
+        }
+        return Collections.unmodifiableSet(empty);
+    }
+
+
+
 }

@@ -1,6 +1,6 @@
 package com.newgen.ems.model;
 
-public record Payslip(int employeeId, String employeeName, String designation, String department, double salary) {
+public record Payslip(int employeeId, String employeeName, String designation, Department department, double salary) {
 
     public Payslip {
 

@@ -10,18 +10,22 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
 
     private final int id;
     private String name;
-    private String department;
+    private Department department;
     protected double baseSalary;
-    private boolean active;
+    private EmployeeStatus status;
 
     private Set<String> skills = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
-    public Employee(int id, String name, String department, double baseSalary) {
+    public Employee(int id, String name, Department department, double baseSalary) {
         this.id = id;
         this.name = name;
         this.department = department;
         this.baseSalary = baseSalary;
-        this.active = true;
+        this.status = EmployeeStatus.ACTIVE;
+    }
+
+    public Employee(int id, String name, double baseSalary) {
+        this(id, name, Department.UNASSIGNED, baseSalary);
     }
 
     public int getId() {
@@ -36,11 +40,11 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
         this.name = name;
     }
 
-    public String getDepartment() {
+    public Department getDepartment() {
         return department;
     }
 
-    public void setDepartment(String department) {
+    public void setDepartment(Department department) {
         this.department = department;
     }
 
@@ -52,15 +56,19 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
         this.baseSalary = baseSalary;
     }
 
-    public boolean isActive() {
-        return active;
+    public EmployeeStatus getStatus() {
+        return status;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setStatus(EmployeeStatus status) {
+        this.status = status;
     }
 
     public abstract String designation();
+
+    public boolean isActive() {
+        return status == EmployeeStatus.ACTIVE;
+    }
 
     @Override
     public double calculateMonthlySalary() {
@@ -91,7 +99,7 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
                 ", name='" + name + '\'' +
                 ", department='" + department + '\'' +
                 ", baseSalary=" + baseSalary +
-                ", active=" + active +
+                ", status=" + status +
                 ", skills=" + skills +
                 (extras.isEmpty() ? "" : ", " + extras) +
                 '}';
