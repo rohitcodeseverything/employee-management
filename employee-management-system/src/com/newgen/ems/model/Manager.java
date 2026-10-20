@@ -1,11 +1,14 @@
 package com.newgen.ems.model;
 
+import java.time.LocalDate;
+
 public class Manager extends Employee implements Promotable{
 
     private int teamSize;
 
-    public Manager(int id, String name, Department department, double baseSalary,  int teamSize) {
-        super(id, name, department, baseSalary);
+    public Manager(int id, String name, Department department, double baseSalary, LocalDate hireDate,
+                   int teamSize) {
+        super(id, name, department, baseSalary, hireDate);
         this.teamSize = teamSize;
     }
 

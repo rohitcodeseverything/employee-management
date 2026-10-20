@@ -1,6 +1,7 @@
 package com.newgen.ems.model;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -12,8 +13,8 @@ public class Developer extends Employee implements Promotable {
             Map.of("java", 0.10, "python", 0.10);
     private static final double DEFAULT_STATIC_RATE = 0.05;
 
-    public Developer(int id, String name, Department department, double baseSalary,  String primaryLanguage) {
-        super(id, name, department, baseSalary);
+    public Developer(int id, String name, Department department, double baseSalary, LocalDate hireDate,  String primaryLanguage) {
+        super(id, name, department, baseSalary,  hireDate);
         this.primaryLanguage = primaryLanguage;
     }
 

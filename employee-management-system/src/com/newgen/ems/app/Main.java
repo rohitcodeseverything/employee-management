@@ -1,21 +1,33 @@
 package com.newgen.ems.app;
 
 import com.newgen.ems.model.*;
+import com.newgen.ems.repository.ActivityEntry;
 import com.newgen.ems.repository.BoundedHistory;
 import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class Main {
+
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
+    private static final LocalDate DEMO_HIRE_DATE = LocalDate.of(2026, 1, 5);
+
     public static void main(String[] args) {
 
         System.out.printf("[====Employee Management System Application====]\n");
 
-        Manager manager = new Manager(101, "Asha Rao", Department.ENGINEERING, 90_000, 6);
-        Developer developer = new Developer(102, "Rahul Verma", Department.ENGINEERING, 65_000, "Java");
-        Intern inter = new Intern(103, "Priya Singh", Department.ENGINEERING, 15_000, "Asha Rao");
-        Developer secondDeveloper = new Developer(104, "Virat Kohli", Department.ENGINEERING, 60_000, "Python");
+        Manager manager = new Manager(101, "Asha Rao", Department.ENGINEERING, 90_000, LocalDate.of(2016, 4, 4), 6);
+        Developer developer = new Developer(102, "Rahul Verma", Department.ENGINEERING, 65_000, LocalDate.of(2019, 8, 19),"Java");
+        Intern inter = new Intern(103, "Priya Singh", Department.ENGINEERING, 15_000, LocalDate.of(2026, 6, 1), "Asha Rao");
+        Developer secondDeveloper = new Developer(104, "Virat Kohli", Department.ENGINEERING, 60_000, LocalDate.of(2022, 1, 10), "Python");
 
         manager.addSkill("Leadership");
         manager.addSkill("Java");
@@ -78,7 +90,7 @@ public class Main {
         demonstrateMap(employeeRepository);
         demonstrateSets(employeeRepository, developer);
         demonstrateEnums(employeeRepository, developer);
-
+        demonstrateDates(manager);
 
         System.out.println();
         System.out.println("=== Section 13/14: over to you (Scanner input, now with exception handling) ===");
@@ -92,6 +104,66 @@ public class Main {
 //        System.out.println("Default Object#toString() (we'll fix this in Section 15): " + manager);
 
     }
+
+    private static void demonstrateDates(Manager manager) {
+        System.out.println();
+        System.out.println("=== Section 23: date and time ===");
+
+        LocalDate hired = manager.getHireDate();
+        System.out.printf("%-34s: %s%n", "hire date (ISO text)", hired);
+        System.out.printf("%-34s: %d, %s, %d%n", "getYear/getMonth/getDayOfMonth",
+                hired.getYear(), hired.getMonth(), hired.getDayOfMonth());
+        System.out.printf("%-34s: %s%n", "getDayOfWeek()", hired.getDayOfWeek());
+        System.out.printf("%-34s: %s%n", "format(\"dd MMM yyyy\")", DATE_FORMAT.format(hired));
+        System.out.printf("%-34s: %s (hired is still %s)%n", "plusYears(5) is a new LocalDate", hired.plusYears(5), hired);
+
+        LocalDate reportDate = LocalDate.of(2026, 1, 1);
+        Period tenure = manager.tenure(reportDate);
+        System.out.printf("%-34s: %b%n", "hired.isBefore(2026-01-01)", hired.isBefore(reportDate));
+        System.out.printf("%-34s: %s%n", "tenure as of 2026-01-01", tenure);
+        System.out.printf("%-34s: %d, %d, %d%n", "getYears/getMonths/getDays",
+                tenure.getYears(), tenure.getMonths(), tenure.getDays());
+        System.out.printf("%-34s: %s%n", "formatted for people", formatTenure(tenure));
+        System.out.printf("%-34s: %s%n", "hire date plus that Period", hired.plus(tenure));
+        System.out.printf("%-34s: %s%n", "Jan 31 to Mar 1",
+                Period.between(LocalDate.of(2026, 1, 31), LocalDate.of(2026, 3, 1)));
+
+        System.out.printf("%-34s: %s%n", "parse(\"2024-02-29\")", LocalDate.parse("2024-02-29"));
+
+        try {
+            LocalDate.parse("2025-02-30");
+        } catch (DateTimeParseException ex) {
+            System.out.printf("%-34s: %s%n", "parse(\"2025-02-30\")", ex.getClass().getSimpleName());
+        }
+
+        DateTimeFormatter slashes = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        System.out.printf("%-34s: %s%n", "ofPattern parse(\"30/02/2025\")", LocalDate.parse("30/02/2025", slashes));
+
+        LocalDateTime start = LocalDateTime.of(2026, 3, 2, 9, 30);
+        LocalDateTime stop = start.plusHours(2).plusMinutes(15);
+        System.out.printf("%-34s: %s%n", "Duration.between(09:30, 11:45)", Duration.between(start, stop));
+
+        System.out.printf("%-34s: %s%n", "an ActivityEntry, as displayed",
+                new ActivityEntry(start, "Added Manager 101 (Asha Rao)"));
+
+    }
+
+    private static String formatTenure(Period tenure) {
+        if (tenure.getYears() > 0) {
+            return plural(tenure.getYears(), "year") + ", " + plural(tenure.getMonths(), "month");
+        }
+        if (tenure.getMonths() > 0) {
+            return plural(tenure.getMonths(), "month");
+        }
+        return plural(tenure.getDays(), "day");
+    }
+
+    private static String plural(int count, String unit) {
+        return count + " " + unit + (count == 1 ? "" : "s");
+    }
+
+
+
 
     private static void demonstrateEnums(EmployeeRepository employeeRepository, Developer developer) {
         System.out.println();
@@ -132,10 +204,10 @@ public class Main {
         System.out.printf("%-34s: %s%n", "Nobody works in", employeeRepository.departmentWithNoEmployees());
 
         EmployeeRepository scratch = new EmployeeRepository();
-        scratch.add(new Intern(900, "Temp A", Department.SALES, 1_000, "Nobody"));
-        scratch.add(new Intern(901, "Temp B", Department.FINANCE, 1_000, "Nobody"));
-        scratch.add(new Intern(902, "Temp C", Department.ENGINEERING, 1_000, "Nobody"));
-        scratch.add(new Intern(903, "Temp D", Department.SALES, 1_000, "Nobody"));
+        scratch.add(new Intern(900, "Temp A", Department.SALES, 1_000, DEMO_HIRE_DATE, "Nobody"));
+        scratch.add(new Intern(901, "Temp B", Department.FINANCE, 1_000, DEMO_HIRE_DATE, "Nobody"));
+        scratch.add(new Intern(902, "Temp C", Department.ENGINEERING, 1_000,DEMO_HIRE_DATE,  "Nobody"));
+        scratch.add(new Intern(903, "Temp D", Department.SALES, 1_000, DEMO_HIRE_DATE, "Nobody"));
         System.out.printf("%-34s: %s%n", "headcount (declaration order)", scratch.headCountByDepartment());
 
         try {
@@ -179,9 +251,10 @@ public class Main {
 
         Set<Employee> team = new HashSet<>();
         team.add(developer);
-        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, "Kotlin");
+        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, LocalDate.of(2020, 1, 6),
+                "Kotlin");
         System.out.printf("%-34s: %b%n", "team.add(same id, other object)", team.add(rahulFromHr));
-        var temp = new Intern(900, "Temp", Department.ENGINEERING, 1_000, "Nobody");
+        var temp = new Intern(900, "Temp", Department.ENGINEERING, 1_000, DEMO_HIRE_DATE, "Nobody");
         team.add(temp);
         temp.addSkill("Mentoring");
         System.out.printf("%-34s: %b%n", "contains(temp) after addSkill", team.contains(temp));
@@ -202,8 +275,8 @@ public class Main {
         System.out.printf("%-34s: %b%n", "Java people contain the AND set", javaPeople.containsAll(both));
 
         Set<Employee> byPay = new TreeSet<>(new PayComparator());
-        byPay.add(new Intern(901, "Sam", Department.ENGINEERING, 15_000, "Nobody"));
-        byPay.add(new Intern(902, "Alex", Department.ENGINEERING, 15_000, "Nobody"));
+        byPay.add(new Intern(901, "Sam", Department.ENGINEERING, 15_000, DEMO_HIRE_DATE, "Nobody"));
+        byPay.add(new Intern(902, "Alex", Department.ENGINEERING, 15_000, DEMO_HIRE_DATE, "Nobody"));
         System.out.printf("%-34s: %s%n", "byPay", byPay);
         System.out.printf("%-34s: %d%n", "TreeSet by pay, 2 on the same pay", byPay.size());
 
@@ -329,7 +402,7 @@ public class Main {
         System.out.printf("%-34s: %s%n", "Highest paid first", String.join(", ", highestPaidFirst));
 
         Employee firstEmployee = firstOf(employeeRepository.findAll());
-        String newestActivity = firstOf(employeeRepository.history());
+        ActivityEntry newestActivity = firstOf(employeeRepository.history());
         System.out.printf("%-34s: %s%n", "firstOf(findAll())", firstEmployee.getName());
         System.out.printf("%-34s: %s%n", "firstOf(history())", newestActivity);
 
@@ -382,7 +455,7 @@ public class Main {
         List<Employee> everyone =  employeeRepository.findAll();
 
          try {
-             everyone.add(new Intern(999, "Komal", Department.ENGINEERING, 1, "Nobody"));
+             everyone.add(new Intern(999, "Komal", Department.ENGINEERING, 1, DEMO_HIRE_DATE, "Nobody"));
          } catch (UnsupportedOperationException ex) {
              System.out.printf("%-34s: %s%n", "findAll().add(...)", ex.getClass().getSimpleName());
          }
@@ -479,7 +552,7 @@ public class Main {
 
         // equals()/hashCode(): same id means same employee, even when the
         // details differ -- but it's still a different object in memory.
-        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, "Kotlin");
+        var rahulFromHr = new Developer(102, "Rahul V.", Department.ENGINEERING, 70_000, DEMO_HIRE_DATE, "Kotlin");
         System.out.printf("%-34s: %b%n", "developer == rahulFromHr", developer == rahulFromHr);
         System.out.printf("%-34s: %b%n", "developer.equals(rahulFromHr)", developer.equals(rahulFromHr));
         System.out.printf("%-34s: %b%n", "developer.equals(manager)", developer.equals(manager));
@@ -544,6 +617,7 @@ public class Main {
                  System.out.println("11. Add a skill to an employee");
                  System.out.println("12. Find employees by skills");
                  System.out.println("13. Change an employee's status");
+                 System.out.println("14. Show tenure of every employee");
                  System.out.println("0. Exit");
                  System.out.print("Choose an option: ");
 
@@ -574,9 +648,10 @@ public class Main {
                      case 11 -> addSkill(sc, employeeRepository);
                      case 12 -> findBySkills(sc, employeeRepository);
                      case 13 -> changeStatus(sc, employeeRepository);
+                     case 14 -> showTenure(employeeRepository);
                      case 0 -> running = false;
                      default -> {
-                         System.out.println("Invalid option Choose betwen 0 to 13");
+                         System.out.println("Invalid option Choose betwen 0 to 14");
                      }
                  }
                  System.out.println("Goodbye!");
@@ -584,6 +659,19 @@ public class Main {
 
         }
 
+    }
+
+    private static void showTenure(EmployeeRepository repository) {
+        LocalDate today = LocalDate.now();
+        System.out.println("Tenure as of " + DATE_FORMAT.format(today) + ":");
+        List<Employee> everyone = repository.findAll();
+        if (everyone.isEmpty()) {
+            System.out.println("  (none)");
+        }
+        for (Employee employee : everyone) {
+            System.out.printf("  %-15s joined %s -- %s%n", employee.getName(),
+                    DATE_FORMAT.format(employee.getHireDate()), formatTenure(employee.tenure(today)));
+        }
     }
 
 
@@ -769,6 +857,14 @@ public class Main {
         System.out.print("Department: ");
         Department department = readDepartment(sc);
 
+        System.out.print("Hire date (yyyy-MM-dd): ");
+        LocalDate hireDate = LocalDate.parse(sc.nextLine().trim());
+
+        if(hireDate.isAfter(LocalDate.now())) {
+            System.out.println("A hire date can't be in the future -- employee not added.");
+            return;
+        }
+
         System.out.print("Base salary: ");
         double baseSalary = Double.parseDouble(sc.nextLine().trim());
 
@@ -781,19 +877,19 @@ public class Main {
             case 1 -> {
                 System.out.print("Team size: ");
                 int teamSize = Integer.parseInt(sc.nextLine().trim());
-                yield new Manager(id, name, department, baseSalary, teamSize);
+                yield new Manager(id, name, department, baseSalary, hireDate, teamSize);
             }
 
             case 2 -> {
                 System.out.print("Primary language: ");
                 String language = sc.nextLine().trim();
-                yield new Developer(id, name, department, baseSalary, language);
+                yield new Developer(id, name, department, baseSalary,hireDate , language);
             }
 
             default ->  {
                 System.out.print("Mentor name: ");
                 String mentorName = sc.nextLine().trim();
-                yield new Intern(id, name, department, baseSalary, mentorName);
+                yield new Intern(id, name, department, baseSalary, hireDate, mentorName);
             }
 
         };

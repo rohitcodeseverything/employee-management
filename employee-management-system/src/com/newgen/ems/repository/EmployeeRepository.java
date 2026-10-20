@@ -4,6 +4,7 @@ import com.newgen.ems.model.Department;
 import com.newgen.ems.model.Employee;
 import com.newgen.ems.model.EmployeeStatus;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class EmployeeRepository {
@@ -14,7 +15,7 @@ public class EmployeeRepository {
 
     private static final int HISTORY_LIMIT = 10;
     private final Map<Integer, Employee> employees = new LinkedHashMap<>();
-    private final BoundedHistory<String> activity = new BoundedHistory<>(ACTIVITY_LIMIT);
+    private final BoundedHistory<ActivityEntry> activity = new BoundedHistory<>(ACTIVITY_LIMIT);
     private final BoundedHistory<Employee> recentlyRemoved = new BoundedHistory<>(REMOVED_LIMIT);
 
     public void add(Employee employee) {
@@ -22,7 +23,7 @@ public class EmployeeRepository {
             throw new DuplicateEmployeeIdException("Employee id " + employee.getId() + " already exists");
         }
         employees.put(employee.getId(), employee);
-        activity.record("Added  " + describe(employee));
+        log("Added  " + describe(employee));
     }
 
     public Employee findById(int id) throws EmployeeNotFoundException {
@@ -75,7 +76,7 @@ public class EmployeeRepository {
         // remove(Object) locates the element with equals() -- Section 15's
         // same-class-and-same-id rule is what makes this find the right one.
         employees.remove(id);
-        activity.record("Removed  " + describe(employee));
+        log("Removed  " + describe(employee));
         recentlyRemoved.record(employee);
         return employee;
     }
@@ -92,7 +93,7 @@ public class EmployeeRepository {
             }
         }
         if(removed > 0) {
-            activity.record("Removed " + removed + " employee(s) from " + department.getDisplayName());
+            log("Removed " + removed + " employee(s) from " + department.getDisplayName());
         }
         return removed;
     }
@@ -101,7 +102,7 @@ public class EmployeeRepository {
         Employee employee = findById(id);
         boolean added = employee.addSkill(skill);
         if(added) {
-            activity.record("Added skill " + skill.trim() + " to " + describe(employee));
+            log("Added skill " + skill.trim() + " to " + describe(employee));
         }
         return added;
     }
@@ -120,6 +121,9 @@ public class EmployeeRepository {
 
     }
 
+
+
+
     public Set<String> allSkills() {
        Set<String> all = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
        for(Employee employee : employees.values()) {
@@ -133,7 +137,7 @@ public class EmployeeRepository {
         return recentlyRemoved.latestFirst();
     }
 
-    public List<String> history() {
+    public List<ActivityEntry> history() {
         return activity.latestFirst();
     }
 
@@ -159,7 +163,7 @@ public class EmployeeRepository {
         }
 
         employee.setStatus(status);
-        activity.record(
+        log(
                 "Status of" + describe(employee) + " changes from" + before.getDisplayName() + " to " +
                         status.getDisplayName());
         return true;
@@ -174,6 +178,9 @@ public class EmployeeRepository {
         return Collections.unmodifiableSet(empty);
     }
 
+    private void log(String message) {
+        activity.record(new ActivityEntry(LocalDateTime.now(), message));
+    }
 
 
 }

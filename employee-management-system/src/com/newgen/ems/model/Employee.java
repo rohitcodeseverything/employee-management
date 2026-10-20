@@ -1,6 +1,8 @@
 package com.newgen.ems.model;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -12,20 +14,32 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
     private String name;
     private Department department;
     protected double baseSalary;
+    private final LocalDate hireDate;
     private EmployeeStatus status;
 
     private Set<String> skills = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
-    public Employee(int id, String name, Department department, double baseSalary) {
+    public Employee(int id, String name, Department department, double baseSalary,
+                    LocalDate hireDate) {
+
         this.id = id;
         this.name = name;
         this.department = department;
         this.baseSalary = baseSalary;
+        this.hireDate = hireDate;
         this.status = EmployeeStatus.ACTIVE;
     }
 
     public Employee(int id, String name, double baseSalary) {
-        this(id, name, Department.UNASSIGNED, baseSalary);
+        this(id, name, Department.UNASSIGNED, baseSalary,  LocalDate.now());
+    }
+
+    public Period tenure(LocalDate asOf) {
+        return Period.between(hireDate, asOf);
+    }
+
+    public LocalDate getHireDate() {
+        return hireDate;
     }
 
     public int getId() {
@@ -99,6 +113,7 @@ public abstract class Employee implements Payable , Cloneable, Comparable<Employ
                 ", name='" + name + '\'' +
                 ", department='" + department + '\'' +
                 ", baseSalary=" + baseSalary +
+                ", hireDate=" + hireDate +
                 ", status=" + status +
                 ", skills=" + skills +
                 (extras.isEmpty() ? "" : ", " + extras) +

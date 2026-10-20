@@ -1,11 +1,14 @@
 package com.newgen.ems.model;
 
+import java.time.LocalDate;
+
 public class Intern extends Employee {
 
     private String metorName;
 
-    public Intern(int id, String name, Department department, double baseSalary, String metorName) {
-        super(id, name, department, baseSalary);
+    public Intern(int id, String name, Department department, double baseSalary, LocalDate hireDate,
+                  String metorName) {
+        super(id, name, department, baseSalary, hireDate);
         this.metorName = metorName;
     }
 
