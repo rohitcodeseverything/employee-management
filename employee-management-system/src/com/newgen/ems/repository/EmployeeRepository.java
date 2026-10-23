@@ -6,6 +6,8 @@ import com.newgen.ems.model.EmployeeStatus;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class EmployeeRepository {
 
@@ -17,6 +19,16 @@ public class EmployeeRepository {
     private final Map<Integer, Employee> employees = new LinkedHashMap<>();
     private final BoundedHistory<ActivityEntry> activity = new BoundedHistory<>(ACTIVITY_LIMIT);
     private final BoundedHistory<Employee> recentlyRemoved = new BoundedHistory<>(REMOVED_LIMIT);
+    private final Supplier<LocalDateTime> clock;
+
+    public EmployeeRepository() {
+
+        this(() -> LocalDateTime.now());
+    }
+
+    public EmployeeRepository(Supplier<LocalDateTime> clock) {
+        this.clock = clock;
+    }
 
     public void add(Employee employee) {
         if (employees.get(employee.getId()) != null)  {
@@ -52,11 +64,11 @@ public class EmployeeRepository {
         return ids;
     }
 
-    public List<Employee> findByDepartment(Department department) {
+    public List<Employee> findMatching(Predicate<? super Employee> rule) {
         List<Employee> matches = new ArrayList<>();
 
         for(Employee employee : employees.values()) {
-            if(employee.getDepartment() == department) {
+            if(rule.test(employee)) {
                 matches.add(employee);
             }
         }
@@ -64,6 +76,11 @@ public class EmployeeRepository {
         return Collections.unmodifiableList(matches);
 
     }
+
+    public List<Employee> findByDepartment(Department department) {
+            return findMatching(employee -> employee.getDepartment() == department);
+    }
+
 
     public List<Employee> findAllSorted(Comparator<? super Employee> order) {
         List<Employee> listOfEmloyee = new ArrayList<>(employees.values());
@@ -81,20 +98,28 @@ public class EmployeeRepository {
         return employee;
     }
 
-    public int removeDepartment(Department department) {
+    public int removeWhere(Predicate<? super Employee> rule) {
         int removed = 0;
         Iterator<Employee> iterator = employees.values().iterator();
         while (iterator.hasNext()) {
             Employee current  = iterator.next();
-            if (current.getDepartment() == department) {
+            if (rule.test(current)) {
                 iterator.remove();
                 recentlyRemoved.record(current);
                 removed++;
             }
         }
+
+        return removed;
+    }
+
+    public int removeDepartment(Department department) {
+        int removed = removeWhere(employee -> employee.getDepartment() == department);
+
         if(removed > 0) {
             log("Removed " + removed + " employee(s) from " + department.getDisplayName());
         }
+
         return removed;
     }
 
@@ -109,15 +134,8 @@ public class EmployeeRepository {
 
     public Set<Employee> findBySkills(Set<String> required) {
 
-        Set<Employee> matches = new LinkedHashSet<>();
-        for(Employee employee : employees.values()) {
-
-            if(employee.getSkills().containsAll(required)) {
-                matches.add(employee);
-            }
-        }
-
-        return Collections.unmodifiableSet(matches);
+        List<Employee> matches =  findMatching(employee -> employee.getSkills().containsAll(required));
+        return Collections.unmodifiableSet(new LinkedHashSet<>(matches));
 
     }
 
@@ -179,7 +197,7 @@ public class EmployeeRepository {
     }
 
     private void log(String message) {
-        activity.record(new ActivityEntry(LocalDateTime.now(), message));
+        activity.record(new ActivityEntry(clock.get()  , message));
     }
 
 
