@@ -23,7 +23,7 @@ public class EmployeeRepository {
 
     public EmployeeRepository() {
 
-        this(() -> LocalDateTime.now());
+        this(LocalDateTime::now);
     }
 
     public EmployeeRepository(Supplier<LocalDateTime> clock) {

@@ -81,7 +81,7 @@ public class Main {
 
         List<Promotable> promotables = List.of(manager, developer, secondDeveloper);
 
-        promotables.forEach(promotable -> promotable.promote());
+        promotables.forEach(Promotable::promote);
 
         double yearToDate = 0;
         for (int month = 1; month <= 12; month++) {
@@ -420,7 +420,7 @@ public class Main {
     }
 
     private static void printPayslips(Collection<? extends Employee> employees) {
-        employees.forEach(employee -> printPayslip(employee));
+        employees.forEach(Main::printPayslip);
     }
 
     private static void demonstrateLinkedList(EmployeeRepository employeeRepository) {
@@ -547,7 +547,7 @@ public class Main {
         System.out.println("=== Section 15: java.lang.Object ===");
 
         // toString(): each of these used to print like com.newgen.ems.model.Manager@a09ee92.
-        employeeRepository.findAll().forEach(employee -> System.out.println("employee = " + employee));
+        employeeRepository.findAll().forEach(System.out::println);
 
         // getClass(): the runtime type behind a reference. getName() is the
         // text the default toString() used to print before the "@".
@@ -658,21 +658,21 @@ public class Main {
         Map<Integer, MenuItem> menu = new LinkedHashMap<>();
 
         menu.put(1 , new MenuItem("Add new Employee",
-                (scanner, repository) -> addEmployeeFromConsole(scanner, repository)));
+                Main::addEmployeeFromConsole));
 
         menu.put(2, new MenuItem("find Employee by id",
-                ((scanner, repository) -> findEmployee(scanner, repository))));
+                (Main::findEmployee)));
 
         menu.put(3, new MenuItem("List all employees",
                 (scanner, repository) -> printPayslips(repository.findAll())));
         menu.put(4, new MenuItem("List employees in a department",
-                (scanner, repository) -> listDepartment(scanner, repository)));
+                Main::listDepartment));
         menu.put(5, new MenuItem("List employees sorted",
-                (scanner, repository) -> listSorted(scanner, repository)));
+                Main::listSorted));
         menu.put(6, new MenuItem("Remove an employee by id",
-                (scanner, repository) -> removeEmployee(scanner, repository)));
+                Main::removeEmployee));
         menu.put(7, new MenuItem("Remove a whole department",
-                (scanner, repository) -> removeDepartment(scanner, repository)));
+                Main::removeDepartment));
         menu.put(8, new MenuItem("Show recent activity",
                 (scanner, repository) -> printNumbered("Recent activity (newest first):", repository.history())));
         menu.put(9, new MenuItem("Show recently removed employees",
@@ -680,11 +680,11 @@ public class Main {
         menu.put(10, new MenuItem("Show headcount by department",
                 (scanner, repository) -> showHeadCount(repository)));
         menu.put(11, new MenuItem("Add a skill to an employee",
-                (scanner, repository) -> addSkill(scanner, repository)));
+                Main::addSkill));
         menu.put(12, new MenuItem("Find employees by skills",
-                (scanner, repository) -> findBySkills(scanner, repository)));
+                Main::findBySkills));
         menu.put(13, new MenuItem("Change an employee's status",
-                (scanner, repository) -> changeStatus(scanner, repository)));
+                Main::changeStatus));
         menu.put(14, new MenuItem("Show tenure of every employee",
                 (scanner, repository) -> showTenure(repository)));
 
