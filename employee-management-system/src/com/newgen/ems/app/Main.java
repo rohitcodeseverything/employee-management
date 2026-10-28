@@ -5,6 +5,7 @@ import com.newgen.ems.repository.ActivityEntry;
 import com.newgen.ems.repository.BoundedHistory;
 import com.newgen.ems.repository.EmployeeNotFoundException;
 import com.newgen.ems.repository.EmployeeRepository;
+import com.newgen.ems.service.PayrollReport;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -21,12 +23,12 @@ public class Main {
     private static final LocalDate DEMO_HIRE_DATE = LocalDate.of(2026, 1, 5);
 
     private static final Comparator<Employee> BY_NAME =
-            (first, second) -> first.getName().compareToIgnoreCase(second.getName());
+            Comparator.comparing(Employee::getName, String.CASE_INSENSITIVE_ORDER);
 
     private static final Comparator<Payable> BY_PAY_HIGHEST_FIRST =
-            (first, second) ->
-                    Double.compare(second.calculateMonthlySalary(), first.calculateMonthlySalary());
+            Comparator.comparing(Payable::calculateMonthlySalary, Comparator.reverseOrder());
 
+    private static final int TOP_EARNERS = 3;
 
 
     public static void main(String[] args) {
@@ -305,11 +307,9 @@ public class Main {
     }
 
     private static List<String> names(Collection<? extends Employee> employees) {
-        List<String> names = new ArrayList<>();
-        for (Employee employee : employees) {
-            names.add(employee.getName());
-        }
-        return names;
+       return employees.stream()
+               .map(Employee::getName)
+               .toList();
     }
 
     private static void demonstrateMap(EmployeeRepository employeeRepository) {
@@ -406,7 +406,7 @@ public class Main {
             highestPaidFirst.add(employee.getName());
         }
 
-        System.out.printf("%-34s: %s%n", "Highest paid first", String.join(", ", highestPaidFirst));
+        System.out.printf("%-34s: %s%n", "Highest paid first", String.join(", ", names(employeeRepository.findAllSorted(byPay))));
 
         Employee firstEmployee = firstOf(employeeRepository.findAll());
         ActivityEntry newestActivity = firstOf(employeeRepository.history());
@@ -687,7 +687,7 @@ public class Main {
                 Main::changeStatus));
         menu.put(14, new MenuItem("Show tenure of every employee",
                 (scanner, repository) -> showTenure(repository)));
-
+        menu.put(15, new MenuItem("Show payroll report", Main::showPayrollReport));
         return menu;
 
 
@@ -751,15 +751,80 @@ public class Main {
     private static void showHeadCount(EmployeeRepository employeeRepository) {
             System.out.println("Headcount By Department:");
 
-            Map<Department, Integer> headcount = employeeRepository.headCountByDepartment();
+            Map<Department, Long> headcount = employeeRepository.headCountByDepartment();
 
             if(headcount.isEmpty()) {
                 System.out.println("No employees found");
             }
 
-            for( Map.Entry<Department, Integer> entry : headcount.entrySet()) {
+            for( Map.Entry<Department, Long> entry : headcount.entrySet()) {
                 System.out.println(" " + entry.getKey() + ": " + entry.getValue());
             }
+
+        Set<Department> empty =   employeeRepository.departmentWithNoEmployees();
+
+        if (!empty.isEmpty()) {
+            // Section 26: map() to the display names, then joining() glues them
+            // together with ", " -- the loop that built a list for String.join.
+            System.out.println("No one works in: " + empty.stream()
+                    .map(Department::getDisplayName)
+                    .collect(Collectors.joining(", ")));
+        }
+    }
+
+    private static void showPayrollReport(Scanner scanner, EmployeeRepository repository) {
+        System.out.print("Show who is paid more than (monthly pay): ");
+        double threshold;
+        try {
+            threshold = Double.parseDouble(scanner.nextLine().trim());
+        } catch (NumberFormatException ex) {
+            System.out.println("That wasn't a valid number.");
+            return;
+        }
+        if (!Double.isFinite(threshold)) {
+            System.out.println("That wasn't a valid number.");
+            return;
+        }
+
+        PayrollReport report = new PayrollReport(repository.findAll());
+        System.out.println("Payroll report for " + report.headCount() + " employee(s)");
+        System.out.printf("  %-22s: %,.2f%n", "Total monthly pay", report.totalMonthlyPay());
+        System.out.printf("  %-22s: %,.2f%n", "Average monthly pay", report.averageMonthlySalary());
+
+        System.out.println("Top " + TOP_EARNERS + " earners:");
+        List<Payslip> top = report.topEarners(TOP_EARNERS);
+        if (top.isEmpty()) {
+            System.out.println("  (none)");
+        }
+        int rank = 1;
+        for (Payslip payslip : top) {
+            System.out.printf("  %d. %-16s %,12.2f%n", rank++, payslip.employeeName(), payslip.salary());
+        }
+
+        System.out.println("By department:");
+        Map<Department, List<Payslip>> byDepartment = report.byDepartment();
+        Map<Department, Double> totals = report.totalByDepartment();
+        if (byDepartment.isEmpty()) {
+            System.out.println("  (none)");
+        }
+        for (Map.Entry<Department, List<Payslip>> entry : byDepartment.entrySet()) {
+            System.out.printf("  %-16s %3d employee(s) %,14.2f%n", entry.getKey().getDisplayName(),
+                    entry.getValue().size(), totals.get(entry.getKey()));
+        }
+
+        Map<Boolean, List<Payslip>> split = report.splitAbove(threshold);
+        System.out.printf("Split at %,.2f:%n", threshold);
+        System.out.printf("  %-16s: %s%n", "paid more", joinNames(split.get(true)));
+        System.out.printf("  %-16s: %s%n", "that or less", joinNames(split.get(false)));
+    }
+
+    private static String joinNames(List<Payslip> payslips) {
+        if (payslips.isEmpty()) {
+            return "(nobody)";
+        }
+        return payslips.stream()
+                .map(Payslip::employeeName)
+                .collect(Collectors.joining(", "));
     }
 
 

@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class EmployeeRepository {
 
@@ -65,16 +66,10 @@ public class EmployeeRepository {
     }
 
     public List<Employee> findMatching(Predicate<? super Employee> rule) {
-        List<Employee> matches = new ArrayList<>();
-
-        for(Employee employee : employees.values()) {
-            if(rule.test(employee)) {
-                matches.add(employee);
-            }
-        }
-
-        return Collections.unmodifiableList(matches);
-
+        return
+                employees.values().stream()
+                        .filter(rule)
+                        .toList();
     }
 
     public List<Employee> findByDepartment(Department department) {
@@ -83,9 +78,12 @@ public class EmployeeRepository {
 
 
     public List<Employee> findAllSorted(Comparator<? super Employee> order) {
-        List<Employee> listOfEmloyee = new ArrayList<>(employees.values());
-        listOfEmloyee.sort(order);
-        return Collections.unmodifiableList(listOfEmloyee);
+        return
+                Collections.unmodifiableList(
+                        employees.values().stream()
+                                .sorted(order)
+                                .toList()
+                );
     }
 
     public Employee remove(int id) throws EmployeeNotFoundException {
@@ -134,8 +132,13 @@ public class EmployeeRepository {
 
     public Set<Employee> findBySkills(Set<String> required) {
 
-        List<Employee> matches =  findMatching(employee -> employee.getSkills().containsAll(required));
-        return Collections.unmodifiableSet(new LinkedHashSet<>(matches));
+
+               Set<Employee> matches =
+                employees.values().stream()
+               .filter(employee -> employee.getSkills().containsAll(required))
+               .collect(Collectors.toCollection(LinkedHashSet::new));
+
+               return Collections.unmodifiableSet(matches);
 
     }
 
@@ -143,11 +146,11 @@ public class EmployeeRepository {
 
 
     public Set<String> allSkills() {
-       Set<String> all = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-       for(Employee employee : employees.values()) {
-           all.addAll(employee.getSkills());
-       }
-       return Collections.unmodifiableSet(all);
+           Set<String> all =  employees.values().stream()
+                    .flatMap(employee -> employee.getSkills().stream())
+                    .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
+           return Collections.unmodifiableSet(all);
     }
 
 
@@ -163,14 +166,17 @@ public class EmployeeRepository {
         return employee.designation() + " " + employee.getId() + " (" + employee.getName() + ")";
     }
 
-    public Map<Department, Integer> headCountByDepartment() {
-        Map<Department, Integer> headcount = new TreeMap<>();
-        for(Employee employee : employees.values()) {
-            Integer soFar = headcount.get(employee.getDepartment()); // null for first time
-            headcount.put(employee.getDepartment(), soFar == null ? 1 : soFar + 1);
-        }
+    public Map<Department, Long> headCountByDepartment() {
+        return
+                Collections.unmodifiableMap(
 
-        return Collections.unmodifiableMap(headcount);
+                        employees.values().stream()
+                                .collect(Collectors.groupingBy(
+                                        Employee::getDepartment,
+                                        TreeMap::new,
+                                        Collectors.counting()
+                                ))
+                );
     }
 
     public boolean changeStatus(int id, EmployeeStatus status) throws EmployeeNotFoundException {
